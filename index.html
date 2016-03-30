@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html><head>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flow Visualization - Straight, Arrows - jsFiddle demo by pierregeo</title>
+  
+  
+  <script type="text/javascript" src="src/jquery.js"></script>
+  
+  <link rel="stylesheet" type="text/css" href="src/normalize.css">
+  
+  
+  <link rel="stylesheet" type="text/css" href="Flow%20Visualization%20-%20Straight,%20Arrows%20-%20jsFiddle%20demo%20by%20pierregeo_fichiers/result-light.css">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" integrity="sha512-dTfge/zgoMYpP7QbHy4gWMEGsbsdZeCXz7irItjcC3sPUFtf0kuFbDz/ixG7ArTxmDjLXDmezHubeNikyKGVyQ==" crossorigin="anonymous">
+  
+    
+    <script type="text/javascript" src="src/d3.js"></script>
+    <script type="text/javascript" src="src/topojson.js"></script>
+    <script type="text/javascript" src="src/underscore.js"></script>
+    <script type="text/javascript" src="src/tipsy.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/1.5.0/d3-legend.js"></script>
+    
+    
+  
+  <style type="text/css">
+
+
+#legendfleche {
+    top:-100px;
+  }
+  #legendcercle {
+   top:-98px;
+  }
+  #sources {
+    top:-30px;
+  }
+
+@media (max-width:992px){
+  #legendfleche {
+    top:-250px;
+  }
+  #legendcercle {
+   top:-250px;
+  }
+  #sources {
+    top:-340px;
+    left:200px;
+  }
+}
+
+svg .circle {
+  fill: #FFF;
+  stroke-width: 1;
+  stroke: #999;
+}
+svg .geo {
+  fill: #ddd;
+  stroke: white;
+  stroke-width: 0.5;
+}
+svg circle:hover{
+  cursor: pointer;
+}
+svg circle:active{
+  stroke: black;
+}
+svg .link_line {
+  stroke: rgba(255,255,255,1);
+  stroke-width: 0.6;
+}
+svg .link_line:hover{
+  cursor: pointer;
+  stroke: black;
+}
+svg .link_line:active{
+  stroke: black;
+}
+text {
+text-anchor: middle;
+font-weight: bold;
+font-family: arial;
+font-size: 7pt;
+text-shadow: 0px 0px 2px #FFF;
+}
+.label1 {
+    color: #3690c0;
+}
+#tooltop{
+    display: none;
+}
+.d3-tip {
+  font-family: arial;
+  font-size: 10px;
+  line-height: 1;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  border-radius: 2px;
+  font-size: 12px;                                                /* NEW */
+  left: 130px;                                                    /* NEW */
+  padding: 10px;                                                  /* NEW */
+  position: absolute;                                             /* NEW */
+  text-align: center; 
+}
+/*
+.d3-tip:after {
+  box-sizing: border-box;
+  display: inline;
+  font-size: 10px;
+  width: 100%;
+  line-height: 1;
+  color: rgba(0, 0, 0, 0.8);
+  content: "\25BC";
+  position: absolute;
+  text-align: center;
+}
+
+
+.d3-tip.n:after {
+  margin: -1px 0 0 0;
+  top: 100%;
+  left: 0;
+}*/
+
+  </style>
+  
+
+
+
+<script type="text/javascript">//<![CDATA[
+$(window).load(function(){
+
+
+(function() {
+
+    var width = 915,
+        height = 570;
+
+    // set projection
+    var projection = d3.geo.mercator().scale(6000).translate([width / 2.2, height / 1.2]);
+
+    // create path variable
+    //var path = d3.geo.path()
+    //.projection(projection)      
+      
+
+   //var radius = 10; /* radius of circles */
+    //var numCircles = 8; /* number of circles - you must update link source/target values to match changes in the number of circles */
+    var d3LineLinear = d3.svg.line().interpolate("linear");
+    var d3color = d3.interpolateRgb("#3690c0","#023858"); /* color range for flow lines -- PIERRE Not that clear */ 
+    //var d3color = d3.interpolateRgb("#638aa0"); /* color range for flow lines */
+
+    //A LIST OF LINKS BETWEEN CIRCLES
+    var links = [
+
+         { source:1, target:10,strength: 0.00003,name:'Benin->Liberia'},
+        { source:17, target:9,strength: 0.00005,name:'Gambia->Cape Verde'},
+        { source:22, target:19,strength: 0.00005,name:'Ghana->Sao Tome and Principe'},
+        { source:9, target:20,strength: 0.00005,name:'Cape Verde->Sierra Leone'},
+        { source:18, target:9,strength: 0.00006,name:'Mali->Cape Verde'},
+        { source:4, target:9,strength: 0.00007,name:'Ivory Coast->Cape Verde'},
+        { source:21, target:9,strength: 0.00007,name:'Gabon->Cape Verde'},
+        { source:10, target:14,strength: 0.00009,name:'Liberia->Togo'},
+        { source:20, target:9,strength: 0.00014,name:'Sierra Leone->Cape Verde'},
+        { source:15, target:19,strength: 0.00016,name:'Burkina Faso->Sao Tome and Principe'},
+        { source:13, target:22,strength: 0.00017,name:'Chad->Ghana'},
+        { source:13, target:14,strength: 0.00017,name:'Chad->Togo'},
+        { source:16, target:22,strength: 0.00019,name:'Mauritania->Ghana'},
+        { source:8, target:14,strength: 0.00019,name:'Central African Republic->Togo'},
+        { source:3, target:20,strength: 0.0002,name:'Guinea-Bissau->Sierra Leone'},
+        { source:9, target:19,strength: 0.00028,name:'Cape Verde->Sao Tome and Principe'},
+        { source:15, target:20,strength: 0.00029,name:'Burkina Faso->Sierra Leone'},
+        { source:5, target:14,strength: 0.00029,name:'Congo->Togo'},
+        { source:14, target:20,strength: 0.00037,name:'Togo->Sierra Leone'},
+        { source:22, target:9,strength: 0.00042,name:'Ghana->Cape Verde'},
+        { source:17, target:22,strength: 0.00042,name:'Gambia->Ghana'},
+        { source:12, target:19,strength: 0.00046,name:'Senegal->Sao Tome and Principe'},
+        { source:17, target:4,strength: 0.0005,name:'Gambia->Ivory Coast'},
+        { source:3, target:8,strength: 0.00056,name:'Guinea-Bissau->Central African Republic'},
+        { source:7, target:10,strength: 0.00059,name:'Niger->Liberia'},
+        { source:9, target:6,strength: 0.00063,name:'Cape Verde->Guinea'},
+        { source:5, target:19,strength: 0.00066,name:'Congo->Sao Tome and Principe'},
+        { source:14, target:19,strength: 0.00069,name:'Togo->Sao Tome and Principe'},
+        { source:6, target:8,strength: 0.00091,name:'Guinea->Central African Republic'},
+        { source:16, target:8,strength: 0.00097,name:'Mauritania->Central African Republic'},
+        { source:12, target:22,strength: 0.00116,name:'Senegal->Ghana'},
+        { source:13, target:16,strength: 0.00116,name:'Chad->Mauritania'},
+        { source:16, target:20,strength: 0.00116,name:'Mauritania->Sierra Leone'},
+        { source:3, target:10,strength: 0.00119,name:'Guinea-Bissau->Liberia'},
+        { source:7, target:20,strength: 0.00132,name:'Niger->Sierra Leone'},
+        { source:11, target:22,strength: 0.00133,name:'Cameroon->Ghana'},
+        { source:18, target:19,strength: 0.00133,name:'Mali->Sao Tome and Principe'},
+        { source:15, target:8,strength: 0.00161,name:'Burkina Faso->Central African Republic'},
+        { source:6, target:22,strength: 0.00161,name:'Guinea->Ghana'},
+        { source:1, target:19,strength: 0.00166,name:'Benin->Sao Tome and Principe'},
+        { source:21, target:16,strength: 0.00185,name:'Gabon->Mauritania'},
+        { source:1, target:20,strength: 0.00213,name:'Benin->Sierra Leone'},
+        { source:15, target:10,strength: 0.00232,name:'Burkina Faso->Liberia'},
+        { source:4, target:8,strength: 0.00233,name:'Ivory Coast->Central African Republic'},
+        { source:0, target:8,strength: 0.00238,name:'Equatorial Guinea->Central African Republic'},
+        { source:21, target:0,strength: 0.0024,name:'Gabon->Equatorial Guinea'},
+        { source:16, target:6,strength: 0.00245,name:'Mauritania->Guinea'},
+        { source:0, target:19,strength: 0.0025,name:'Equatorial Guinea->Sao Tome and Principe'},
+        { source:14, target:16,strength: 0.00253,name:'Togo->Mauritania'},
+        { source:20, target:22,strength: 0.00259,name:'Sierra Leone->Ghana'},
+        { source:21, target:13,strength: 0.0026,name:'Gabon->Chad'},
+        { source:11, target:19,strength: 0.00281,name:'Cameroon->Sao Tome and Principe'},
+        { source:14, target:8,strength: 0.00286,name:'Togo->Central African Republic'},
+        { source:8, target:19,strength: 0.00303,name:'Central African Republic->Sao Tome and Principe'},
+        { source:15, target:6,strength: 0.00305,name:'Burkina Faso->Guinea'},
+        { source:21, target:8,strength: 0.00308,name:'Gabon->Central African Republic'},
+        { source:8, target:18,strength: 0.0031,name:'Central African Republic->Mali'},
+        { source:9, target:4,strength: 0.00328,name:'Cape Verde->Ivory Coast'},
+        { source:7, target:16,strength: 0.00328,name:'Niger->Mauritania'},
+        { source:2, target:0,strength: 0.00336,name:'Nigeria->Equatorial Guinea'},
+        { source:1, target:8,strength: 0.00337,name:'Benin->Central African Republic'},
+        { source:12, target:10,strength: 0.00358,name:'Senegal->Liberia'},
+        { source:2, target:19,strength: 0.00363,name:'Nigeria->Sao Tome and Principe'},
+        { source:4, target:20,strength: 0.00368,name:'Ivory Coast->Sierra Leone'},
+        { source:3, target:4,strength: 0.0037,name:'Guinea-Bissau->Ivory Coast'},
+        { source:14, target:10,strength: 0.00383,name:'Togo->Liberia'},
+        { source:6, target:9,strength: 0.00411,name:'Guinea->Cape Verde'},
+        { source:4, target:16,strength: 0.00423,name:'Ivory Coast->Mauritania'},
+        { source:11, target:7,strength: 0.0043,name:'Cameroon->Niger'},
+        { source:22, target:16,strength: 0.00451,name:'Ghana->Mauritania'},
+        { source:13, target:19,strength: 0.00463,name:'Chad->Sao Tome and Principe'},
+        { source:17, target:6,strength: 0.00515,name:'Gambia->Guinea'},
+        { source:9, target:3,strength: 0.00521,name:'Cape Verde->Guinea-Bissau'},
+        { source:16, target:3,strength: 0.00527,name:'Mauritania->Guinea-Bissau'},
+        { source:2, target:6,strength: 0.00578,name:'Nigeria->Guinea'},
+        { source:1, target:18,strength: 0.00596,name:'Benin->Mali'},
+        { source:5, target:13,strength: 0.00637,name:'Congo->Chad'},
+        { source:10, target:18,strength: 0.00643,name:'Liberia->Mali'},
+        { source:11, target:18,strength: 0.0065,name:'Cameroon->Mali'},
+        { source:2, target:12,strength: 0.00652,name:'Nigeria->Senegal'},
+        { source:17, target:18,strength: 0.00654,name:'Gambia->Mali'},
+        { source:12, target:20,strength: 0.00662,name:'Senegal->Sierra Leone'},
+        { source:13, target:1,strength: 0.00667,name:'Chad->Benin'},
+        { source:2, target:9,strength: 0.00668,name:'Nigeria->Cape Verde'},
+        { source:7, target:8,strength: 0.00692,name:'Niger->Central African Republic'},
+        { source:20, target:4,strength: 0.00742,name:'Sierra Leone->Ivory Coast'},
+        { source:18, target:20,strength: 0.00743,name:'Mali->Sierra Leone'},
+        { source:17, target:10,strength: 0.00745,name:'Gambia->Liberia'},
+        { source:11, target:0,strength: 0.00747,name:'Cameroon->Equatorial Guinea'},
+        { source:20, target:3,strength: 0.00766,name:'Sierra Leone->Guinea-Bissau'},
+        { source:13, target:7,strength: 0.0078,name:'Chad->Niger'},
+        { source:11, target:12,strength: 0.0078,name:'Cameroon->Senegal'},
+        { source:18, target:8,strength: 0.00792,name:'Mali->Central African Republic'},
+        { source:10, target:3,strength: 0.00847,name:'Liberia->Guinea-Bissau'},
+        { source:11, target:16,strength: 0.00847,name:'Cameroon->Mauritania'},
+        { source:22, target:6,strength: 0.0085,name:'Ghana->Guinea'},
+        { source:7, target:6,strength: 0.00885,name:'Niger->Guinea'},
+        { source:14, target:6,strength: 0.00932,name:'Togo->Guinea'},
+        { source:14, target:18,strength: 0.00982,name:'Togo->Mali'},
+        { source:0, target:5,strength: 0.01173,name:'Equatorial Guinea->Congo'},
+        { source:12, target:7,strength: 0.01187,name:'Senegal->Niger'},
+        { source:1, target:16,strength: 0.01188,name:'Benin->Mauritania'},
+        { source:18, target:1,strength: 0.01231,name:'Mali->Benin'},
+        { source:4, target:7,strength: 0.01241,name:'Ivory Coast->Niger'},
+        { source:14, target:12,strength: 0.01284,name:'Togo->Senegal'},
+        { source:7, target:12,strength: 0.013,name:'Niger->Senegal'},
+        { source:18, target:10,strength: 0.01326,name:'Mali->Liberia'},
+        { source:22, target:20,strength: 0.01341,name:'Ghana->Sierra Leone'},
+        { source:20, target:18,strength: 0.0135,name:'Sierra Leone->Mali'},
+        { source:22, target:12,strength: 0.01373,name:'Ghana->Senegal'},
+        { source:19, target:0,strength: 0.01399,name:'Sao Tome and Principe->Equatorial Guinea'},
+        { source:17, target:3,strength: 0.0141,name:'Gambia->Guinea-Bissau'},
+        { source:12, target:9,strength: 0.01473,name:'Senegal->Cape Verde'},
+        { source:1, target:6,strength: 0.01493,name:'Benin->Guinea'},
+        { source:19, target:9,strength: 0.01707,name:'Sao Tome and Principe->Cape Verde'},
+        { source:22, target:7,strength: 0.01734,name:'Ghana->Niger'},
+        { source:2, target:18,strength: 0.01748,name:'Nigeria->Mali'},
+        { source:3, target:6,strength: 0.01777,name:'Guinea-Bissau->Guinea'},
+        { source:14, target:5,strength: 0.01808,name:'Togo->Congo'},
+        { source:5, target:1,strength: 0.01823,name:'Congo->Benin'},
+        { source:20, target:17,strength: 0.01982,name:'Sierra Leone->Gambia'},
+        { source:2, target:20,strength: 0.02091,name:'Nigeria->Sierra Leone'},
+        { source:4, target:12,strength: 0.0216,name:'Ivory Coast->Senegal'},
+        { source:7, target:13,strength: 0.02327,name:'Niger->Chad'},
+        { source:16, target:5,strength: 0.02335,name:'Mauritania->Congo'},
+        { source:21, target:5,strength: 0.02347,name:'Gabon->Congo'},
+        { source:18, target:14,strength: 0.02371,name:'Mali->Togo'},
+        { source:5, target:8,strength: 0.02388,name:'Congo->Central African Republic'},
+        { source:2, target:8,strength: 0.02453,name:'Nigeria->Central African Republic'},
+        { source:17, target:20,strength: 0.02472,name:'Gambia->Sierra Leone'},
+        { source:3, target:16,strength: 0.02575,name:'Guinea-Bissau->Mauritania'},
+        { source:10, target:22,strength: 0.02672,name:'Liberia->Ghana'},
+        { source:12, target:8,strength: 0.02707,name:'Senegal->Central African Republic'},
+        { source:22, target:18,strength: 0.02741,name:'Ghana->Mali'},
+        { source:16, target:17,strength: 0.0277,name:'Mauritania->Gambia'},
+        { source:1, target:12,strength: 0.02775,name:'Benin->Senegal'},
+        { source:12, target:15,strength: 0.02874,name:'Senegal->Burkina Faso'},
+        { source:4, target:21,strength: 0.03233,name:'Ivory Coast->Gabon'},
+        { source:20, target:2,strength: 0.0364,name:'Sierra Leone->Nigeria'},
+        { source:2, target:15,strength: 0.03682,name:'Nigeria->Burkina Faso'},
+        { source:17, target:12,strength: 0.03965,name:'Gambia->Senegal'},
+        { source:9, target:2,strength: 0.04042,name:'Cape Verde->Nigeria'},
+        { source:4, target:2,strength: 0.04138,name:'Ivory Coast->Nigeria'},
+        { source:12, target:6,strength: 0.04299,name:'Senegal->Guinea'},
+        { source:1, target:15,strength: 0.04311,name:'Benin->Burkina Faso'},
+        { source:13, target:21,strength: 0.04311,name:'Chad->Gabon'},
+        { source:5, target:18,strength: 0.04427,name:'Congo->Mali'},
+        { source:12, target:2,strength: 0.04505,name:'Senegal->Nigeria'},
+        { source:3, target:2,strength: 0.046,name:'Guinea-Bissau->Nigeria'},
+        { source:6, target:3,strength: 0.04655,name:'Guinea->Guinea-Bissau'},
+        { source:6, target:21,strength: 0.04742,name:'Guinea->Gabon'},
+        { source:21, target:18,strength: 0.04913,name:'Gabon->Mali'},
+        { source:3, target:9,strength: 0.04998,name:'Guinea-Bissau->Cape Verde'},
+        { source:2, target:10,strength: 0.05152,name:'Nigeria->Liberia'},
+        { source:4, target:14,strength: 0.05154,name:'Ivory Coast->Togo'},
+        { source:6, target:2,strength: 0.05878,name:'Guinea->Nigeria'},
+        { source:7, target:18,strength: 0.06039,name:'Niger->Mali'},
+        { source:22, target:21,strength: 0.06062,name:'Ghana->Gabon'},
+        { source:17, target:2,strength: 0.06176,name:'Gambia->Nigeria'},
+        { source:19, target:21,strength: 0.062,name:'Sao Tome and Principe->Gabon'},
+        { source:6, target:16,strength: 0.06635,name:'Guinea->Mauritania'},
+        { source:15, target:21,strength: 0.06661,name:'Burkina Faso->Gabon'},
+        { source:4, target:6,strength: 0.0671,name:'Ivory Coast->Guinea'},
+        { source:22, target:10,strength: 0.07399,name:'Ghana->Liberia'},
+        { source:12, target:3,strength: 0.07422,name:'Senegal->Guinea-Bissau'},
+        { source:18, target:22,strength: 0.07819,name:'Mali->Ghana'},
+        { source:13, target:5,strength: 0.07837,name:'Chad->Congo'},
+        { source:18, target:17,strength: 0.07867,name:'Mali->Gambia'},
+        { source:15, target:2,strength: 0.07883,name:'Burkina Faso->Nigeria'},
+        { source:11, target:5,strength: 0.08382,name:'Cameroon->Congo'},
+        { source:16, target:4,strength: 0.08993,name:'Mauritania->Ivory Coast'},
+        { source:0, target:2,strength: 0.09087,name:'Equatorial Guinea->Nigeria'},
+        { source:7, target:22,strength: 0.09205,name:'Niger->Ghana'},
+        { source:15, target:1,strength: 0.09495,name:'Burkina Faso->Benin'},
+        { source:22, target:1,strength: 0.09747,name:'Ghana->Benin'},
+        { source:12, target:5,strength: 0.09841,name:'Senegal->Congo'},
+        { source:18, target:6,strength: 0.09873,name:'Mali->Guinea'},
+        { source:14, target:7,strength: 0.10014,name:'Togo->Niger'},
+        { source:3, target:17,strength: 0.10484,name:'Guinea-Bissau->Gambia'},
+        { source:4, target:22,strength: 0.1067,name:'Ivory Coast->Ghana'},
+        { source:1, target:5,strength: 0.11271,name:'Benin->Congo'},
+        { source:20, target:12,strength: 0.11453,name:'Sierra Leone->Senegal'},
+        { source:11, target:8,strength: 0.11463,name:'Cameroon->Central African Republic'},
+        { source:12, target:18,strength: 0.1231,name:'Senegal->Mali'},
+        { source:4, target:1,strength: 0.13118,name:'Ivory Coast->Benin'},
+        { source:7, target:15,strength: 0.13163,name:'Niger->Burkina Faso'},
+        { source:20, target:10,strength: 0.13165,name:'Sierra Leone->Liberia'},
+        { source:2, target:13,strength: 0.13199,name:'Nigeria->Chad'},
+        { source:16, target:18,strength: 0.14488,name:'Mauritania->Mali'},
+        { source:5, target:21,strength: 0.15547,name:'Congo->Gabon'},
+        { source:7, target:14,strength: 0.15871,name:'Niger->Togo'},
+        { source:14, target:15,strength: 0.15882,name:'Togo->Burkina Faso'},
+        { source:2, target:14,strength: 0.16183,name:'Nigeria->Togo'},
+        { source:18, target:16,strength: 0.16358,name:'Mali->Mauritania'},
+        { source:6, target:18,strength: 0.16833,name:'Guinea->Mali'},
+        { source:10, target:2,strength: 0.1833,name:'Liberia->Nigeria'},
+        { source:1, target:7,strength: 0.18483,name:'Benin->Niger'},
+        { source:1, target:22,strength: 0.19502,name:'Benin->Ghana'},
+        { source:15, target:7,strength: 0.19945,name:'Burkina Faso->Niger'},
+        { source:2, target:7,strength: 0.20062,name:'Nigeria->Niger'},
+        { source:12, target:4,strength: 0.21359,name:'Senegal->Ivory Coast'},
+        { source:14, target:21,strength: 0.21927,name:'Togo->Gabon'},
+        { source:10, target:20,strength: 0.22144,name:'Liberia->Sierra Leone'},
+        { source:3, target:12,strength: 0.2267,name:'Guinea-Bissau->Senegal'},
+        { source:2, target:21,strength: 0.22779,name:'Nigeria->Gabon'},
+        { source:15, target:18,strength: 0.23145,name:'Burkina Faso->Mali'},
+        { source:8, target:5,strength: 0.24255,name:'Central African Republic->Congo'},
+        { source:18, target:5,strength: 0.2516,name:'Mali->Congo'},
+        { source:18, target:12,strength: 0.26193,name:'Mali->Senegal'},
+        { source:11, target:13,strength: 0.27597,name:'Cameroon->Chad'},
+        { source:12, target:21,strength: 0.29057,name:'Senegal->Gabon'},
+        { source:2, target:22,strength: 0.3238,name:'Nigeria->Ghana'},
+        { source:22, target:15,strength: 0.33242,name:'Ghana->Burkina Faso'},
+        { source:16, target:2,strength: 0.34196,name:'Mauritania->Nigeria'},
+        { source:6, target:17,strength: 0.3433,name:'Guinea->Gambia'},
+        { source:6, target:10,strength: 0.37026,name:'Guinea->Liberia'},
+        { source:22, target:14,strength: 0.37764,name:'Ghana->Togo'},
+        { source:6, target:12,strength: 0.39594,name:'Guinea->Senegal'},
+        { source:16, target:12,strength: 0.40955,name:'Mauritania->Senegal'},
+        { source:2, target:1,strength: 0.42575,name:'Nigeria->Benin'},
+        { source:2, target:4,strength: 0.43761,name:'Nigeria->Ivory Coast'},
+        { source:18, target:15,strength: 0.45208,name:'Mali->Burkina Faso'},
+        { source:12, target:16,strength: 0.45775,name:'Senegal->Mauritania'},
+        { source:14, target:1,strength: 0.4593,name:'Togo->Benin'},
+        { source:18, target:7,strength: 0.46584,name:'Mali->Niger'},
+        { source:22, target:4,strength: 0.4807,name:'Ghana->Ivory Coast'},
+        { source:11, target:2,strength: 0.48162,name:'Cameroon->Nigeria'},
+        { source:11, target:21,strength: 0.48255,name:'Cameroon->Gabon'},
+        { source:1, target:21,strength: 0.4973,name:'Benin->Gabon'},
+        { source:13, target:2,strength: 0.52251,name:'Chad->Nigeria'},
+        { source:18, target:21,strength: 0.52549,name:'Mali->Gabon'},
+        { source:1, target:14,strength: 0.54857,name:'Benin->Togo'},
+        { source:7, target:4,strength: 0.55979,name:'Niger->Ivory Coast'},
+        { source:14, target:4,strength: 0.56592,name:'Togo->Ivory Coast'},
+        { source:1, target:4,strength: 0.60797,name:'Benin->Ivory Coast'},
+        { source:6, target:20,strength: 0.6151,name:'Guinea->Sierra Leone'},
+        { source:13, target:8,strength: 0.6669,name:'Chad->Central African Republic'},
+        { source:7, target:1,strength: 0.7233,name:'Niger->Benin'},
+        { source:8, target:13,strength: 0.74398,name:'Central African Republic->Chad'},
+        { source:4, target:18,strength: 0.80258,name:'Ivory Coast->Mali'},
+        { source:0, target:21,strength: 0.82825,name:'Equatorial Guinea->Gabon'},
+        { source:7, target:2,strength: 0.83047,name:'Niger->Nigeria'},
+        { source:10, target:4,strength: 0.92688,name:'Liberia->Ivory Coast'},
+        { source:15, target:22,strength: 0.92876,name:'Burkina Faso->Ghana'},
+        { source:12, target:17,strength: 1.00736,name:'Senegal->Gambia'},
+        { source:13, target:11,strength: 1.05049,name:'Chad->Cameroon'},
+        { source:6, target:4,strength: 1.06803,name:'Guinea->Ivory Coast'},
+        { source:14, target:2,strength: 1.09862,name:'Togo->Nigeria'},
+        { source:2, target:11,strength: 1.15621,name:'Nigeria->Cameroon'},
+        { source:10, target:6,strength: 1.18353,name:'Liberia->Guinea'},
+        { source:18, target:2,strength: 1.26631,name:'Mali->Nigeria'},
+        { source:14, target:22,strength: 1.42688,name:'Togo->Ghana'},
+        { source:4, target:10,strength: 1.50586,name:'Ivory Coast->Liberia'},
+        { source:22, target:2,strength: 1.76493,name:'Ghana->Nigeria'},
+        { source:1, target:2,strength: 2.26349,name:'Benin->Nigeria'},
+        { source:20, target:6,strength: 2.26415,name:'Sierra Leone->Guinea'},
+        { source:18, target:4,strength: 4.00332,name:'Mali->Ivory Coast'},
+        { source:4, target:15,strength: 5.57968,name:'Ivory Coast->Burkina Faso'},
+        { source:15, target:4,strength: 14.55427,name:'Burkina Faso->Ivory Coast'},
+    ];
+
+
+
+    function createDefs(defs) {
+        var dropShadowFilter = defs.append('svg:filter').attr('id', 'dropShadow');
+        dropShadowFilter.append('svg:feGaussianBlur').attr('in', 'SourceAlpha').attr('stdDeviation', 1);
+        dropShadowFilter.append('svg:feOffset').attr('dx', 0.4).attr('dy', 0.4).attr('result', 'offsetblur');
+        var feMerge = dropShadowFilter.append('svg:feMerge');
+        feMerge.append('svg:feMergeNode');
+        feMerge.append('svg:feMergeNode').attr('in', "SourceGraphic");
+    }
+
+
+
+
+    //var drag = d3.behavior.drag().origin(Object).on("drag", function() {
+     //   dragmove(this);
+    //});
+
+
+    var circles = 
+    [[10.3345612021697,1.70282292597074,"Equatorial Guinea","GNQ",668225],
+    [2.33977009305457,9.65031728699034,"Benin","BEN",9325032],
+    [8.0927348330527,9.58205759728055,"Nigeria","NGA",174507573],
+    [-14.9871266,12.013149,"Guinea Bissau","GNB",1596677],
+    [-5.552442701,7.61957935,"Ivory Coast","CIV",21504162],
+    [15.24485909,-0.832408,"Republic of Congo","COG",3977000],
+    [-10.93305744,10.43326952,"Guinea","GIN",10589000],
+    [9.4045320514,17.424659,"Niger","NER",15085000],
+    [20.48661935,6.574099727,"Central African Republic","CAR",4744000],
+    [-23.9802625,15.941256028,"Cabo Verde","CPV",491875],
+    [-9.30998639,6.4485068789,"Liberia","LBR",3786764],
+    [12.74289,5.69727889221564,"Cameroon","CMR",19711291],
+    [-14.47131035,14.360592,"Senegal","SEN",12643799],
+    [18.669851834,15.381415,"Chad","CHD",10478000],
+    [0.977211568480038,6.72841203906674,"Togo","TGO",6771993],
+    [-1.7461671633862,12.274233947866,"Burkina Faso","BFA",15034000],
+    [-10.3370973149429,20.2588493162695,"Mauritania","MRT",3256000],
+    [-15.3870294408921,13.4466838093053,"Gambia","GMB",1791000],
+    [-3.51801611672389,17.355276534954,"Mali","MLI",13803000],
+    [6.7164935157563,0.436447378008444,"Sao Tome and Principe","STP",163000],
+    [-11.7912454012255,8.56009101589937,"Sierra Leone","SLE",5363669],
+    [11.7837406375454,-0.622678783047122,"Gabon","GAB",1518000],
+    [-1.2077679735405,7.96276544413042,"Ghana","GHA",24304000]];
+
+
+
+    var strength_scale = 
+        d3.scale.linear()
+        .range([2, 20]) /* thickness range for flow lines */
+        .domain([1.6, d3.max(links, function(d) {
+            return d.strength;
+    })]);
+    
+     var color_scale = 
+         d3.scale.linear().range([0, 1]).domain([0, d3.max(links, function(d) {return d.strength;})]);
+    
+    //if (d.strength<1000)
+    // var color_scale = 
+    //     d3.scale.linear().range([0, 1]).domain([0, d3.max(links, function(d) {
+    //     return d.strength;
+    // })]);
+    
+
+        
+    var tooltip = d3.select("#tooltop").attr("class", "d3-tip");
+    var svg = d3.select("#map").append("svg").attr("width", width).attr("height", height);
+    
+    var geo = svg.append("g").attr("class", "geo");
+    var g_lines = svg.append("g").attr("class", "lines");
+    var g_circles = svg.append("g").attr("class", "circles");
+    var g_midpoints = svg.append("g").attr("class", "midpoints");
+    
+
+    //SHADOW DEFINITION
+    createDefs(svg.append('svg:defs'));
+
+    d3.json("ROWCA_COUNTRIES_2015.json", function(topology) {
+        console.log(topology);
+      geo.append("path")
+          .datum(topojson.feature(topology, topology.objects.ROWCA_COUNTRIES_2015))
+          .attr("d", d3.geo.path().projection(projection));
+
+    }); 
+
+
+
+
+    $.each(circles, function(i, d) {
+        
+        if(d[3]=="GAB"||d[3]=="STP"||d[3]=="LBR"||d[3]=="SLE"||d[3]=="GNB"||d[3]=="GMB"||d[3]=="CPV"||d[3]=="COG"||d[3]=="CAR"){
+            var decal_y=15
+        }
+        else if(d[3]=="GNQ"){
+            var decal_y=-6
+        }
+        else if(d[3]=="CAR"){
+            var decal_x=-6
+        }
+        else if(d[3]=="MRT"){
+            var decal_y=-10
+        }
+        else{
+            var decal_y=4;
+            var decal_x=-0.0002;
+        };
+        g_circles.append("circle")
+        .attr("class", "circle")
+        .attr("id", "circle" + i)
+        .attr("r", Math.sqrt(d[4])/Math.sqrt(100000))
+        .attr("cx", projection(d)[0])
+        .attr("cy", projection(d)[1])
+        //.attr("title", d[2]+":"+d[4])
+        g_circles.append("text").attr("class", "label") 
+        .text(d[3])
+        .attr('x', projection(d)[0])
+        .attr('y', projection(d)[1]+decal_y);
+
+        //console.log(projection(d)[0],projection(d)[1])
+    });
+
+
+    var fnb = d3.format(",.0f");
+
+    g_lines.selectAll(".link_line")
+        .data(links)
+        .enter()
+        .append("path")
+        .attr("class", "link_line")
+        //.attr("title",function(d){return d.name;})
+        .attr("fill", function(d) {
+            return d3color(color_scale(d.strength));
+        })
+        .attr("id", function(i, d) {
+            return "link_line" + d;
+        })
+        .attr("d", function(d) {
+        return drawCurve(d);
+        })
+        .on('mouseover', function(d) {
+
+          tooltip.html("<span class='name'>"+d.name+" : </span><span class='label1'>"+fnb((d.strength*100000).toFixed(0))+"</span>");
+          tooltip.attr('x', d3.event.pageX );
+          tooltip.attr('y', d3.event.pageY +10);
+
+          tooltip
+            .style('display', 'block')
+            //.style('height', '30px')
+            //.style('width', '30px')
+            .style('top', (d3.event.pageY+10) + 'px')
+            .style('left', (d3.event.pageX) + 'px');
+            //console.log(d3.event.pageY);
+        })
+        .on('mouseout', function() {
+          tooltip.style('display', 'none');
+        })
+        .on('mousemove', function(d) {
+            tooltip.style('top', (d3.event.pageY+10 ) + 'px')
+            .style('left', (d3.event.pageX ) + 'px');
+        })
+
+
+
+    function drawCurve(d) {
+        
+
+        var slope = Math.atan2((+d3.select('#circle' + d.target).attr("cy") - d3.select('#circle' + d.source).attr("cy")), (+d3.select('#circle' + d.target).attr("cx") - d3.select('#circle' + d.source).attr("cx")));
+        
+        var slopePlus90 = Math.atan2((+d3.select('#circle' + d.target).attr("cy") - d3.select('#circle' + d.source).attr("cy")), (+d3.select('#circle' + d.target).attr("cx") - d3.select('#circle' + d.source).attr("cx"))) + (Math.PI / 2);
+
+        var sourceX = +d3.select('#circle' + d.source).attr("cx");
+        var sourceY = +d3.select('#circle' + d.source).attr("cy");
+        var targetX = +d3.select('#circle' + d.target).attr("cx");
+        var targetY = +d3.select('#circle' + d.target).attr("cy");
+        var radiusX = +d3.select('#circle' + d.source).attr("r")+2;
+        var radiusY = +d3.select('#circle' + d.target).attr("r")+2;
+        
+        var radius = 0;
+
+        console.log(d)
+        //TODO RADIUS X RADIUS Y + CLASSIF POUR LES FLECHES
+        var arrowOffset = 14;
+        
+        var points = [];
+        
+        //Less than 10 000
+        if(d.strength<0.1){
+
+            points.push([sourceX + radiusX * Math.cos(slope) - strength_scale(0.2) * Math.cos(slopePlus90), sourceY + radiusX * Math.sin(slope) - strength_scale(0.2) * Math.sin(slopePlus90)]);
+            
+            points.push([sourceX + radiusX* Math.cos(slope) , sourceY + radiusX * Math.sin(slope) ]);
+            
+            points.push([targetX - radiusY * Math.cos(slope), targetY - radiusY * Math.sin(slope)]);
+            
+            points.push([targetX - (radiusY) * Math.cos(slope) - strength_scale(0.2) * Math.cos(slopePlus90), targetY - radiusY  * Math.sin(slope) - strength_scale(0.2 ) * Math.sin(slopePlus90)]);
+            
+            points.push([targetX - (radiusY + arrowOffset) * Math.cos(slope) - strength_scale(0.2) * Math.cos(slopePlus90), targetY - (radiusY + arrowOffset) * Math.sin(slope) - strength_scale(0.2) * Math.sin(slopePlus90)]);
+            
+            return d3LineLinear(points) + "Z";
+        }
+
+        //Between 10 000 and 50 000
+        if(d.strength<0.5&&d.strength>0.1){
+
+            points.push([sourceX + radiusX * Math.cos(slope) - strength_scale(2) * Math.cos(slopePlus90), sourceY + radiusX * Math.sin(slope) - strength_scale(2) * Math.sin(slopePlus90)]);
+            
+            points.push([sourceX + radiusX* Math.cos(slope) , sourceY + radiusX * Math.sin(slope) ]);
+            
+            points.push([targetX - radiusY * Math.cos(slope), targetY - radiusY * Math.sin(slope)]);
+            
+            points.push([targetX - (radiusY + arrowOffset) * Math.cos(slope) - strength_scale(2 + (arrowOffset / 2)) * Math.cos(slopePlus90), targetY - (radiusY + arrowOffset) * Math.sin(slope) - strength_scale(2 + (arrowOffset / 2)) * Math.sin(slopePlus90)]);
+            
+            points.push([targetX - (radiusY + arrowOffset) * Math.cos(slope) - strength_scale(2) * Math.cos(slopePlus90), targetY - (radiusY + arrowOffset) * Math.sin(slope) - strength_scale(2) * Math.sin(slopePlus90)]);
+            
+            return d3LineLinear(points) + "Z";
+
+        }
+
+        //Between 50 000 and 100 000
+        if(d.strength<1&&d.strength>0.5){
+
+            points.push([sourceX + radiusX * Math.cos(slope) - strength_scale(4) * Math.cos(slopePlus90), sourceY + radiusX * Math.sin(slope) - strength_scale(4) * Math.sin(slopePlus90)]);
+            
+            points.push([sourceX + radiusX* Math.cos(slope) , sourceY + radiusX * Math.sin(slope) ]);
+            
+            points.push([targetX - radiusY * Math.cos(slope), targetY - radiusY * Math.sin(slope)]);
+            
+            points.push([targetX - (radiusY + arrowOffset) * Math.cos(slope) - strength_scale(4 + (arrowOffset / 2)) * Math.cos(slopePlus90), targetY - (radiusY + arrowOffset) * Math.sin(slope) - strength_scale(4 + (arrowOffset / 2)) * Math.sin(slopePlus90)]);
+            
+            points.push([targetX - (radiusY + arrowOffset) * Math.cos(slope) - strength_scale(4) * Math.cos(slopePlus90), targetY - (radiusY + arrowOffset) * Math.sin(slope) - strength_scale(4) * Math.sin(slopePlus90)]);
+            
+            return d3LineLinear(points) + "Z";
+
+        }
+
+        //Between 100 000 and 600 000
+        if(d.strength>1&&d.strength<10){
+
+            points.push([sourceX + radiusX * Math.cos(slope) - strength_scale(7) * Math.cos(slopePlus90), sourceY + radiusX * Math.sin(slope) - strength_scale(7) * Math.sin(slopePlus90)]);
+            
+            points.push([sourceX + radiusX* Math.cos(slope) , sourceY + radiusX * Math.sin(slope) ]);
+            
+            points.push([targetX - radiusY * Math.cos(slope), targetY - radiusY * Math.sin(slope)]);
+            
+            points.push([targetX - (radiusY + arrowOffset) * Math.cos(slope) - strength_scale(7 + (arrowOffset / 2)) * Math.cos(slopePlus90), targetY - (radiusY + arrowOffset) * Math.sin(slope) - strength_scale(7 + (arrowOffset / 2)) * Math.sin(slopePlus90)]);
+            
+            points.push([targetX - (radiusY + arrowOffset) * Math.cos(slope) - strength_scale(7) * Math.cos(slopePlus90), targetY - (radiusY + arrowOffset) * Math.sin(slope) - strength_scale(7) * Math.sin(slopePlus90)]);
+            
+            return d3LineLinear(points) + "Z";
+
+        }
+
+        //More than 1 000 000
+        if(d.strength>10){
+
+            points.push([sourceX + radiusX* Math.cos(slope) - strength_scale(20) * Math.cos(slopePlus90), sourceY + radiusX * Math.sin(slope) - strength_scale(20) * Math.sin(slopePlus90)]);
+            
+            points.push([sourceX + radiusX* Math.cos(slope) , sourceY + radiusX * Math.sin(slope) ]);
+
+            //points.push([sourceX - radiusX * Math.cos(slope), sourceY - radiusX * Math.sin(slope) ]);
+            
+            points.push([targetX - radiusY * Math.cos(slope), targetY - radiusY * Math.sin(slope)]);
+            
+            points.push([targetX - (radiusY + arrowOffset) * Math.cos(slope) - strength_scale(20 + (arrowOffset / 2)) * Math.cos(slopePlus90), targetY - (radiusY + arrowOffset) * Math.sin(slope) - strength_scale(20 + (arrowOffset / 2)) * Math.sin(slopePlus90)]);
+            
+            points.push([targetX - (radiusY + arrowOffset) * Math.cos(slope) - strength_scale(20) * Math.cos(slopePlus90), targetY - (radiusY + arrowOffset) * Math.sin(slope) - strength_scale(20) * Math.sin(slopePlus90)]);
+            
+            return d3LineLinear(points) + "Z";
+
+        }
+        else{console.log("haha")}
+    }
+
+            // points.push([sourceX + radiusX * Math.cos(slope) - strength_scale(d.strength) * Math.cos(slopePlus90), sourceY + radiusX * Math.sin(slope) - strength_scale(d.strength) * Math.sin(slopePlus90)]);
+            
+            // points.push([sourceX - radius * Math.cos(slope), sourceY - radius * Math.sin(slope)]);
+            
+            // points.push([targetX - radiusY * Math.cos(slope), targetY - radiusY * Math.sin(slope)]);
+            
+            // points.push([targetX - (radiusY + arrowOffset) * Math.cos(slope) - strength_scale(d.strength + (arrowOffset / 2)) * Math.cos(slopePlus90), targetY - (radiusY + arrowOffset) * Math.sin(slope) - strength_scale(d.strength + (arrowOffset / 2)) * Math.sin(slopePlus90)]);
+            
+            // points.push([targetX - (radiusY + arrowOffset) * Math.cos(slope) - strength_scale(d.strength) * Math.cos(slopePlus90), targetY - (radiusY + arrowOffset) * Math.sin(slope) - strength_scale(d.strength) * Math.sin(slopePlus90)]);
+            
+            // return d3LineLinear(points) + "Z";
+})();
+});//]]> 
+
+</script>
+
+</head>
+<body>
+    <div class="container" style="width:1000px">    
+        <div id="title"><h2>Internal Migrations in West and Central Africa</h2><br></div>
+        <div id="tooltop"></div>
+        <div id="map"></div>
+        <div class="row">
+            <div class="col-md-3" id="legendfleche">
+                <svg version="1.0">
+                <g>
+                    <text transform="matrix(1 0 0 1 130 50.5964)" fill="#010101" font-family="'ArialMT'" font-size="12">less than 10,000</text>
+                    <text transform="matrix(1 0 0 1 154 70.2343)" fill="#010101" font-family="'ArialMT'" font-size="12">between 10,000 and 50,000</text>
+                    <text transform="matrix(1 0 0 1 157 91.3015)" fill="#010101" font-family="'ArialMT'" font-size="12">bewteen 50,000 and 100,000</text>
+                    <text transform="matrix(1 0 0 1 160 113.8712)" fill="#010101" font-family="'ArialMT'" font-size="12">between 100,000 and 600,000</text>
+                    <text transform="matrix(1 0 0 1 140 143.4887)" fill="#010101" font-family="'ArialMT'" font-size="12">more than 1,500,000</text>
+                </g>
+                <path id="link_line252_1_" fill="#3486B5" stroke="#FFFFFF" stroke-width="0.5" stroke-miterlimit="10" d="M6.3,104.8l0,9.5l70.8,0
+                    l-14-19.2l0,9.7L6.3,104.8z"></path>
+                <polygon fill="#C9C9C9" points="77.1,47.9 6.7,47.9 6.7,46.9 75.5,46.8 75.5,45.2 78,47.9 "></polygon>
+                <path id="link_line258_1_" fill="#073958" d="M6.7,127.2l-0.1,27.6l70.2,0.1L63,117.6l0,9.7L6.7,127.2z"></path>
+                <path id="link_line233_1_" fill="#358EBD" d="M6.6,85.9l0,5.3h70L62.6,76.1l0,9.7L6.6,85.9z"></path>
+                <path id="link_line194_1_" fill="#3690C0" d="M6.5,67.6l0,2.6l70.5,0L63,57.8l0,9.7L6.5,67.6z"></path>
+                <text transform="matrix(1 0 0 1 65 22.2631)" fill="#010101" font-family="'ArialMT'" font-size="14">Number of migrants in 2013</text>
+                </svg>
+            </div>
+            <div class="col-md-6" id="legendcercle">
+                <svg>
+                    <text transform="matrix(1 0 0 1 65 40.2631)" fill="#010101" font-family="'ArialMT'" font-size="12">Country population in 2011</text>
+                    <circle id="circle2_1_" fill="#FFFFFF" stroke="#676767" stroke-miterlimit="10" cx="48.2" cy="105.7" r="41.8"></circle>
+                    <circle id="circle11_1_" fill="#FFFFFF" stroke="#676767" stroke-miterlimit="10" cx="48.2" cy="133.5" r="14"></circle>
+                    <rect x="96.9" y="119.4" fill="none" width="129" height="50"></rect>
+                    <text transform="matrix(1 0 0 1 120 127.9577)" fill="#010101" font-family="'MyriadPro-Regular'" font-size="12">20,000,000</text>
+                    <rect x="96.9" y="64" fill="none" width="129" height="50"></rect>
+                    <text transform="matrix(1 0 0 1 116.8535 70)" fill="#010101" font-family="'MyriadPro-Regular'" font-size="12">174,500,000</text>
+                    <circle id="circle3_1_" fill="#FFFFFF" stroke="#676767" stroke-miterlimit="10" cx="48.2" cy="144.4" r="4"></circle>
+                    <rect x="96.9" y="140.4" fill="none" width="129" height="50"></rect>
+                    <text transform="matrix(1 0 0 1 122.3 145)" fill="#010101" font-family="'MyriadPro-Regular'" font-size="12">1,500,000</text>
+                </svg>
+            </div>
+            <div class="col-md-4" id="sources" style="width:200px"><p style="font-size:10px">Sources: United Nations, Department of Economic and Social Affairs (2013). Trends in International Migrant Stock: Migrants by Destination and Origin (United Nations database, POP/DB/MIG/Stock/Rev.2013).</p></div>
+        </div>
+    </div>
+
+</body>
+</html>
